@@ -1,16 +1,12 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction, FinancialInsight } from "../types.ts";
 
 export const analyzeFinance = async (transactions: Transaction[]): Promise<FinancialInsight | null> => {
-  const apiKey = process.env.API_KEY || '';
-  if (!apiKey) {
-    throw new Error("Financial Advisor logic requires a valid API_KEY environment variable.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use a direct named parameter with process.env.API_KEY for initialization.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Limiting transactions to recent 50 for performance and token context
   const recentTransactions = transactions.slice(0, 50);
 
   const prompt = `
@@ -85,6 +81,7 @@ export const analyzeFinance = async (transactions: Transaction[]): Promise<Finan
       },
     });
 
+    // Access the text property directly on the response object.
     const text = response.text;
     if (!text) return null;
 

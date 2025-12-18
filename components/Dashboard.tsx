@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Transaction } from '../types';
@@ -21,8 +22,9 @@ const Dashboard: React.FC<DashboardProps> = ({ transactions }) => {
         return acc;
       }, {} as Record<string, number>);
 
+    // Explicitly cast value as number to resolve arithmetic operation type errors
     const pieData = Object.entries(expensesByCategory)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value: value as number }))
       .sort((a, b) => b.value - a.value);
 
     const monthlyData: Record<string, { month: string; income: number; expense: number; savings: number; loans: number }> = {};
