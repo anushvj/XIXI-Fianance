@@ -3,23 +3,30 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction, FinancialInsight } from "../types.ts";
 
 export const analyzeFinance = async (transactions: Transaction[]): Promise<FinancialInsight | null> => {
-  // Use pro-preview for complex financial reasoning
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  const apiKey = process.env.API_KEY || '';
+  if (!apiKey) {
+    throw new Error("Financial Advisor logic requires a valid API_KEY environment variable.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
+  // Limiting transactions to recent 50 for performance and token context
+  const recentTransactions = transactions.slice(0, 50);
+
   const prompt = `
-    Analyze the following financial transactions (all amounts are in Indian Rupees - INR / ₹) and provide a clean, insightful summary.
-    Current Date: ${new Date().toLocaleDateString()}
-    Transactions: ${JSON.stringify(transactions)}
+    Perform a deep granular analysis of these financial movements (INR / ₹). 
+    Context: 
+    - Date: ${new Date().toLocaleDateString()}
+    - Dataset: ${JSON.stringify(recentTransactions)}
     
-    Note: 'loans' entries represent liabilities or money borrowed.
+    Analysis Requirements:
+    1. Overall health summary (concise).
+    2. Category Analysis: For at least 3 high-volume categories, provide a specific insight.
+    3. Recurring Expenses: Identify potential subscriptions or repeating bills.
+    4. Metrics: Calculate Debt-to-Income Ratio (Total Loans / Total Income) and Savings Rate (Savings / Income).
+    5. Actionable tips and Risk warnings.
     
-    Please provide:
-    1. A concise summary of the financial health (2-3 sentences), specifically mentioning any debt (loans) if relevant.
-    2. 3-4 actionable tips to improve savings and manage any debt.
-    3. A projected savings amount for the next month based on current trends (return as a number in INR).
-    4. Any red flags or warnings (e.g., spending too much on entertainment or excessive borrowing).
-    
-    Return ONLY a valid JSON object.
+    Return ONLY a JSON object following the schema.
   `;
 
   try {
@@ -41,8 +48,39 @@ export const analyzeFinance = async (transactions: Transaction[]): Promise<Finan
               type: Type.ARRAY,
               items: { type: Type.STRING }
             },
+            categoryAnalysis: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  category: { type: Type.STRING },
+                  insight: { type: Type.STRING }
+                },
+                required: ['category', 'insight']
+              }
+            },
+            recurringExpenses: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  description: { type: Type.STRING },
+                  amount: { type: Type.NUMBER },
+                  frequency: { type: Type.STRING }
+                },
+                required: ['description', 'amount', 'frequency']
+              }
+            },
+            metrics: {
+              type: Type.OBJECT,
+              properties: {
+                debtToIncomeRatio: { type: Type.NUMBER },
+                savingsRate: { type: Type.NUMBER }
+              },
+              required: ['debtToIncomeRatio', 'savingsRate']
+            }
           },
-          required: ['summary', 'tips', 'projectedSavings', 'warnings'],
+          required: ['summary', 'tips', 'projectedSavings', 'warnings', 'categoryAnalysis', 'recurringExpenses', 'metrics'],
         },
       },
     });
@@ -55,7 +93,7 @@ export const analyzeFinance = async (transactions: Transaction[]): Promise<Finan
     
     return JSON.parse(cleanedJson) as FinancialInsight;
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini Advisor Failure:", error);
     throw error;
   }
 };

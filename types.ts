@@ -15,6 +15,12 @@ export interface FinancialInsight {
   tips: string[];
   projectedSavings: number;
   warnings: string[];
+  categoryAnalysis: { category: string; insight: string }[];
+  recurringExpenses: { description: string; amount: number; frequency: string }[];
+  metrics: {
+    debtToIncomeRatio: number;
+    savingsRate: number;
+  };
 }
 
 export const CATEGORIES: Record<TransactionType, string[]> = {
